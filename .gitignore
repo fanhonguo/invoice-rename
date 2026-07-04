@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 项目特定
+.omc/
+.pytest_cache/
+*.pyc
+
+# 日志
+logs/*.log
+
+# 但保留空的logs目录
+!logs/.gitkeep
+
+# 示例PDF文件（可选）
+*.pdf
