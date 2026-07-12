@@ -35,13 +35,12 @@ def process_invoice_file(pdf_path: str, logger: InvoiceLogger) -> bool:
         logger.log_failure(filename, "未找到销售方或发票号码")
         return False
 
-    # 3. 重命名文件（使用新的参数格式）
+    # 3. 重命名文件
     success, result = rename_file(
         pdf_path,
         invoice_info.get("buyer_alias"),
         invoice_info["seller"],
         invoice_info["invoice_no"],
-        invoice_info.get("date"),
         invoice_info["is_usd"]
     )
 

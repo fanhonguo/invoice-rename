@@ -20,10 +20,9 @@ def test_construct_new_name_full():
         buyer_alias="昊奕佳",
         seller="美设国际物流集团股份有限公司",
         invoice_no="1657614422",
-        date="2025-01-04",
         is_usd=True
     )
-    assert result == "昊奕佳-美设国际物流集团股份有限公司-1657614422-2025-01-04-USD.pdf"
+    assert result == "昊奕佳-美设国际物流集团股份有限公司-1657614422-USD.pdf"
 
 
 def test_construct_new_name_without_usd():
@@ -32,10 +31,9 @@ def test_construct_new_name_without_usd():
         buyer_alias="昊奕佳",
         seller="美设国际物流集团股份有限公司",
         invoice_no="1657614422",
-        date="2025-01-04",
         is_usd=False
     )
-    assert result == "昊奕佳-美设国际物流集团股份有限公司-1657614422-2025-01-04.pdf"
+    assert result == "昊奕佳-美设国际物流集团股份有限公司-1657614422.pdf"
 
 
 def test_construct_new_name_no_buyer_alias():
@@ -44,22 +42,20 @@ def test_construct_new_name_no_buyer_alias():
         buyer_alias=None,
         seller="美设国际物流集团股份有限公司",
         invoice_no="1657614422",
-        date="2025-01-04",
         is_usd=False
     )
-    assert result == "美设国际物流集团股份有限公司-1657614422-2025-01-04.pdf"
+    assert result == "美设国际物流集团股份有限公司-1657614422.pdf"
 
 
-def test_construct_new_name_no_date():
-    """测试没有日期的文件名"""
+def test_construct_new_name_with_usd_no_buyer():
+    """测试有 USD 但没有购买方简称的文件名"""
     result = construct_new_name(
-        buyer_alias="昊奕佳",
+        buyer_alias=None,
         seller="美设国际物流集团股份有限公司",
         invoice_no="1657614422",
-        date=None,
         is_usd=True
     )
-    assert result == "昊奕佳-美设国际物流集团股份有限公司-1657614422-USD.pdf"
+    assert result == "美设国际物流集团股份有限公司-1657614422-USD.pdf"
 
 
 def test_construct_new_name_minimal():
@@ -68,7 +64,6 @@ def test_construct_new_name_minimal():
         buyer_alias=None,
         seller="美设公司",
         invoice_no="12345",
-        date=None,
         is_usd=False
     )
     assert result == "美设公司-12345.pdf"
@@ -80,7 +75,6 @@ def test_construct_new_name_with_invalid_chars():
         buyer_alias="昊奕佳",
         seller="美设<国际>物流",
         invoice_no="12345",
-        date="2025-01-04",
         is_usd=False
     )
-    assert result == "昊奕佳-美设国际物流-12345-2025-01-04.pdf"
+    assert result == "昊奕佳-美设国际物流-12345.pdf"

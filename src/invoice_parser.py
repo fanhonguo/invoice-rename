@@ -2,11 +2,10 @@
 import re
 from typing import Optional, Dict, Any
 from src.config import (
-    SELLER_PATTERNS,
     BUYER_PATTERNS,
     INVOICE_NO_PATTERNS,
     REMARK_PATTERNS,
-    DATE_PATTERNS,
+    SELLER_NAME_PATTERNS,
     BUYER_ALIAS_MAP,
     USD_KEYWORDS
 )
@@ -55,31 +54,6 @@ def extract_buyer_alias(text: str) -> Optional[str]:
     return None
 
 
-def extract_invoice_date(text: str) -> Optional[str]:
-    """
-    从文本中提取开票日期
-
-    Args:
-        text: PDF 提取的文本内容
-
-    Returns:
-        标准格式的日期字符串 (YYYY-MM-DD)，如果未找到返回 None
-    """
-    if not text:
-        return None
-
-    for pattern in DATE_PATTERNS:
-        match = re.search(pattern, text)
-        if match:
-            groups = match.groups()
-            if len(groups) == 3:
-                year, month, day = groups
-                # 标准化为 YYYY-MM-DD 格式
-                return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
-
-    return None
-
-
 def check_usd_payment(text: str) -> bool:
     """
     检查文本是否包含 USD 付款关键词
@@ -124,37 +98,94 @@ def parse_invoice(text: str) -> Optional[Dict[str, Any]]:
         - seller: 销售方名称
         - invoice_no: 发票号码
         - buyer_alias: 购买方简称 (可选)
-        - date: 开票日期 (可选)
         - is_usd: 是否为 USD 付款
         如果提取失败返回 None
     """
     if not text:
         return None
 
-    # 提取销售方名称和发票号码
-    seller = None
+    # 步骤1: 先提取发票号码
     invoice_no = None
-
-    for pattern in SELLER_PATTERNS:
-        match = re.search(pattern, text, re.DOTALL)
+    for pattern in INVOICE_NO_PATTERNS:
+        match = re.search(pattern, text)
         if match:
             invoice_no = clean_value(match.group(1))
-            seller = clean_value(match.group(2))
-            if seller and invoice_no:
+            # 验证发票号码长度（通常15-20位）
+            if invoice_no and len(invoice_no) >= 15:
                 break
 
-    if not seller or not invoice_no:
+    if not invoice_no or len(invoice_no) < 15:
+        return None
+
+    # 步骤2: 提取销售方名称（使用专门的提取函数）
+    seller = extract_seller_name(text)
+    if not seller:
         return None
 
     # 提取可选字段
     buyer_alias = extract_buyer_alias(text)
-    date = extract_invoice_date(text)
     is_usd = check_usd_payment(text)
 
     return {
         "seller": seller,
         "invoice_no": invoice_no,
         "buyer_alias": buyer_alias,
-        "date": date,
         "is_usd": is_usd
     }
+
+
+def extract_seller_name(text: str) -> Optional[str]:
+    """
+    从文本中提取销售方名称
+
+    Args:
+        text: PDF 提取的文本内容
+
+    Returns:
+        销售方名称，如果未找到返回 None
+    """
+    if not text:
+        return None
+
+    # 方法1: 尝试标准模式
+    for pattern in SELLER_NAME_PATTERNS:
+        match = re.search(pattern, text)
+        if match:
+            seller = clean_value(match.group(1))
+            if seller and len(seller) > 5:
+                # 清理可能的额外信息
+                seller = re.sub(r'\s*统一社会信用代码.*', '', seller)
+                seller = re.sub(r'\s*9131.*', '', seller)  # 清理统一社会信用代码
+                seller = seller.strip()
+                if seller:
+                    return seller
+
+    # 方法2: 处理并排格式（购买方 销售方）
+    # 在文本中查找两个公司名称并排的情况
+    # 假设购买方在前，销售方在后（根据实际PDF格式）
+    lines = text.split('\n')
+    for line in lines:
+        # 查找包含两个"有限公司"或类似的行
+        companies = re.findall(r'([^0-9\s]{5,30}?有限公司|[^0-9\s]{5,30}?物流|[^0-9\s]{5,30}?代理|[^0-9\s]{5,30}?科技)', line)
+        if len(companies) >= 2:
+            # 取第二个作为销售方（通常格式是：购买方 销售方）
+            seller = companies[1].strip()
+            if len(seller) > 5:
+                return seller
+
+    # 方法3: 在包含已知购买方的行中查找销售方
+    for buyer_name in BUYER_ALIAS_MAP.values():
+        # 查找包含购买方的行
+        for line in lines:
+            if buyer_name in line:
+                # 尝试提取同一行中的另一个公司名称
+                # 使用排除法：排除购买方名称
+                remaining = line.replace(buyer_name, '')
+                # 在剩余部分查找公司名称
+                seller_match = re.search(r'([^0-9\s]{5,30}?有限公司|[^0-9\s]{5,30}?物流|[^0-9\s]{5,30}?代理)', remaining)
+                if seller_match:
+                    seller = seller_match.group(1).strip()
+                    if len(seller) > 5:
+                        return seller
+
+    return None

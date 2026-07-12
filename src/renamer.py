@@ -24,7 +24,6 @@ def construct_new_name(
     buyer_alias: str = None,
     seller: str = "",
     invoice_no: str = "",
-    date: str = None,
     is_usd: bool = False
 ) -> str:
     """
@@ -34,13 +33,12 @@ def construct_new_name(
         buyer_alias: 购买方简称（可选）
         seller: 销售方名称
         invoice_no: 发票号码
-        date: 开票日期（可选，格式 YYYY-MM-DD）
         is_usd: 是否为 USD 付款
 
     Returns:
         新文件名
-        格式: {购买方简称}-{销售方名称}-{发票号码}-{日期}-USD.pdf
-             或 {购买方简称}-{销售方名称}-{发票号码}-{日期}.pdf
+        格式: {购买方简称}-{销售方名称}-{发票号码}-USD.pdf
+             或 {购买方简称}-{销售方名称}-{发票号码}.pdf
     """
     parts = []
 
@@ -54,10 +52,6 @@ def construct_new_name(
     # 添加发票号码
     parts.append(clean_filename(invoice_no))
 
-    # 添加日期（如果有）
-    if date:
-        parts.append(clean_filename(date))
-
     # 添加 USD 后缀（如果需要）
     if is_usd:
         parts.append("USD")
@@ -70,7 +64,6 @@ def rename_file(
     buyer_alias: str = None,
     seller: str = "",
     invoice_no: str = "",
-    date: str = None,
     is_usd: bool = False
 ) -> Tuple[bool, str]:
     """
@@ -81,7 +74,6 @@ def rename_file(
         buyer_alias: 购买方简称（可选）
         seller: 销售方名称
         invoice_no: 发票号码
-        date: 开票日期（可选）
         is_usd: 是否为 USD 付款
 
     Returns:
@@ -89,7 +81,7 @@ def rename_file(
     """
     try:
         directory = os.path.dirname(original_path)
-        new_name = construct_new_name(buyer_alias, seller, invoice_no, date, is_usd)
+        new_name = construct_new_name(buyer_alias, seller, invoice_no, is_usd)
         new_path = os.path.join(directory, new_name)
 
         if os.path.exists(new_path):

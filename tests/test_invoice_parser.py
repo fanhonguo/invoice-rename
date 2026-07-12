@@ -1,6 +1,6 @@
 """测试发票字段解析模块"""
 import pytest
-from src.invoice_parser import parse_invoice, clean_value, extract_buyer_alias, extract_invoice_date, check_usd_payment
+from src.invoice_parser import parse_invoice, clean_value, extract_buyer_alias, check_usd_payment
 
 
 def test_parse_invoice_success():
@@ -45,27 +45,6 @@ def test_extract_buyer_alias_with_unknown_buyer():
     assert alias is None
 
 
-def test_extract_invoice_date_standard_format():
-    """测试标准日期格式提取"""
-    text = "开票日期：2025-01-04\n销 名称：某某公司"
-    date = extract_invoice_date(text)
-    assert date == "2025-01-04"
-
-
-def test_extract_invoice_date_chinese_format():
-    """测试中文日期格式提取"""
-    text = "开票日期：2025年1月4日\n销 名称：某某公司"
-    date = extract_invoice_date(text)
-    assert date == "2025-01-04"
-
-
-def test_extract_invoice_date_no_date():
-    """测试没有日期信息"""
-    text = "销 名称：某某公司"
-    date = extract_invoice_date(text)
-    assert date is None
-
-
 def test_check_usd_payment_with_dollar_sign():
     """测试包含美元符号"""
     text = "备注：汇率 $ 6.5"
@@ -93,7 +72,6 @@ def test_parse_invoice_with_all_fields():
     发票号码：123456789012345678
     购买方名称：上海昊奕佳国际物流有限公司
     销 名称：某某科技有限公司
-    开票日期：2025-01-04
     备注：汇率 $ 6.5
     """
     result = parse_invoice(text)
@@ -101,7 +79,6 @@ def test_parse_invoice_with_all_fields():
     assert result["seller"] == "某某科技有限公司"
     assert result["invoice_no"] == "123456789012345678"
     assert result["buyer_alias"] == "昊奕佳"
-    assert result["date"] == "2025-01-04"
     assert result["is_usd"] is True
 
 
@@ -110,11 +87,10 @@ def test_parse_invoice_without_buyer_alias():
     text = """
     发票号码：123456789012345678
     销 名称：某某科技有限公司
-    开票日期：2025-01-04
     """
     result = parse_invoice(text)
     assert result is not None
     assert result["seller"] == "某某科技有限公司"
     assert result["invoice_no"] == "123456789012345678"
     assert result["buyer_alias"] is None
-    assert result["date"] == "2025-01-04"
+    assert result["is_usd"] is False
